@@ -1,11 +1,16 @@
+import 'errors/not_declared_dependency.error.dart';
+
 class DIManager {
   static final Map<String, Object Function()> _dependencies =
       <String, Object Function()>{};
 
-  static void factory<T extends Object>(T instance) {
+  static void factory<T extends Object>(
+    T instance, {
+    String? named,
+  }) {
     final Map<String, Object Function()> dependencie =
         <String, Object Function()>{
-      T.toString(): () {
+      named ?? T.toString(): () {
         return instance;
       }
     };
@@ -13,15 +18,19 @@ class DIManager {
     _dependencies.addAll(dependencie);
   }
 
-  static T inject<T extends Object>() {
-    final bool containsKey = _dependencies.containsKey(T.toString());
+  static T inject<T extends Object>({
+    String? named,
+  }) {
+    final String key = named ?? T.toString();
+
+    final bool containsKey = _dependencies.containsKey(key);
 
     if (!containsKey) {
-      throw Exception('${T.toString()} not declared...');
+      throw NotDeclaredDependencyError(T.toString());
     }
 
     final Object Function() item = _dependencies.entries
-        .where((element) => element.key == T.toString())
+        .where((element) => element.key == key)
         .first
         .value;
 

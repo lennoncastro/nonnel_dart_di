@@ -10,23 +10,16 @@ void main() {
   // so, we provide a B with a B as parameter
   factory(C(inject<B>()));
 
-  factory(D());
-  factory(E());
+  // we can create name dependencies...
+  factory(D(), named: 'tchubaruba');
 
-  inject<D>();
-  inject<E>();
+  // ... and get it passing its name as parameter.
+  inject(named: 'tchubaruba');
 
   // we can create factories and inject depencies in it
   factory(
     F(
-      inject<D>(),
-      inject<A>(),
-    ),
-  );
-
-  factory(
-    F(
-      inject<E>(),
+      inject(named: 'tchubaruba'),
       inject<A>(),
     ),
   );
