@@ -41,7 +41,7 @@ mixin DIManager {
             element.named != null && element.named == named);
 
     if (dependencyIDList.isEmpty) {
-      throw NotDeclaredDependencyError(T.toString());
+      throw NotDeclaredDependencyError();
     }
 
     final first = _dependencies.entries
@@ -52,5 +52,10 @@ mixin DIManager {
         .value();
 
     return first as T;
+  }
+
+  static clearDependencies() {
+    _dependencies.clear();
+    print(_dependencies.toString());
   }
 }
