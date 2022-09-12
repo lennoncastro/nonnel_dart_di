@@ -1,9 +1,10 @@
+import 'models/dependency.dart';
 import 'models/dependency_id.dart';
 import 'errors/not_declared_dependency.error.dart';
 
 mixin DIManager {
-  static final Map<DependencyID, Object Function()> _dependencies =
-      <DependencyID, Object Function()>{};
+  static final Map<Dependency, Object Function()> _dependencies =
+      <Dependency, Object Function()>{};
 
   static void factory<T extends Object>(
     T instance, {
@@ -13,8 +14,12 @@ mixin DIManager {
       typeName: T.toString(),
       named: named,
     );
-    _dependencies.addAll(<DependencyID, Object Function()>{
-      dependencyID: () => instance,
+    final Dependency dependency = Dependency(
+      dependencyID: dependencyID,
+      isSingleton: false,
+    );
+    _dependencies.addAll(<Dependency, Object Function()>{
+      dependency: () => instance,
     });
   }
 
@@ -26,8 +31,12 @@ mixin DIManager {
       typeName: T.toString(),
       named: named,
     );
-    _dependencies.addAll(<DependencyID, Object Function()>{
-      dependencyID: builder,
+    final Dependency dependency = Dependency(
+      dependencyID: dependencyID,
+      isSingleton: false,
+    );
+    _dependencies.addAll(<Dependency, Object Function()>{
+      dependency: builder,
     });
   }
 
@@ -35,27 +44,18 @@ mixin DIManager {
     String? named,
   }) {
     final String typeName = T.toString();
-    final Iterable<DependencyID> dependencyIDList = _dependencies.keys.where(
-        (element) =>
-            element.typeName != null && element.typeName == typeName ||
-            element.named != null && element.named == named);
+    final Iterable<MapEntry<Dependency, Object Function()>> dependencies =
+        _dependencies.entries.where((element) =>
+            element.key.dependencyID.typeName != null &&
+                element.key.dependencyID.typeName == typeName ||
+            element.key.dependencyID.named != null &&
+                element.key.dependencyID.named == named);
 
-    if (dependencyIDList.isEmpty) {
+    if (dependencies.isEmpty) {
       throw NotDeclaredDependencyError();
     }
-
-    final first = _dependencies.entries
-        .where((element) =>
-            element.key.typeName != null && element.key.typeName == typeName ||
-            element.key.named != null && element.key.named == named)
-        .first
-        .value();
-
-    return first as T;
+    return dependencies.first.value() as T;
   }
 
-  static clearDependencies() {
-    _dependencies.clear();
-    print(_dependencies.toString());
-  }
+  static clearDependencies() => _dependencies.clear();
 }
