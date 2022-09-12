@@ -22,6 +22,28 @@ void main() {
     });
 
     test(
+        'When creates any singleton with input valid named '
+        'Should return the first A instance', () {
+      //arrange
+      DIManager.clearDependencies();
+      final firstA = A();
+      final secondA = A();
+      final thirdA = A();
+
+      // act
+      DIManager.singleton(firstA, named: 'instanceofA');
+      DIManager.singleton(secondA, named: 'instanceofA');
+      DIManager.singleton(thirdA, named: 'instanceofA');
+
+      // assert
+      expect(
+        DIManager.inject(named: 'instanceofA'),
+        isA<A>(),
+      );
+      expect(DIManager.inject<A>(named: 'instanceofA').time, firstA.time);
+    });
+
+    test(
         'When creates a lazy factory with input valid named '
         'Should return a A instance', () {
       //arrange

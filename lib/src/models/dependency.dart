@@ -1,11 +1,9 @@
-import 'dependency_id.dart';
-
 class Dependency {
   Dependency({
-    required this.dependencyID,
+    required this.builder,
     this.isSingleton = false,
   });
 
-  final DependencyID dependencyID;
   final bool isSingleton;
+  Object Function() builder;
 }
