@@ -1,5 +1,5 @@
 name: nonnel
-version: 0.0.3
+version: 0.0.4
 description: Helps to create dependency injection modules
 repository: https://github.com/lennoncastro/nonnel_dart_di
 homepage: https://github.com/lennoncastro/nonnel_dart_di
