@@ -9,6 +9,15 @@ void factory<T extends Object>(
       named: named,
     );
 
+void singleton<T extends Object>(
+  T instance, {
+  String? named,
+}) =>
+    DIManager.singleton<T>(
+      instance,
+      named: named,
+    );
+
 void lazyFactory<T extends Object>(
   T Function() builder, {
   String? named,

@@ -46,7 +46,5 @@ class ThirdModule {
         inject<A>(),
       ),
     );
-
-    inject<F>().talkar();
   }
 }

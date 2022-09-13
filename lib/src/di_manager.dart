@@ -1,61 +1,77 @@
-import 'models/dependency_id.dart';
+import 'errors/invalid_dependency_name.error.dart';
 import 'errors/not_declared_dependency.error.dart';
+import 'models/dependency.dart';
 
 mixin DIManager {
-  static final Map<DependencyID, Object Function()> _dependencies =
-      <DependencyID, Object Function()>{};
+  static final Map<String, Dependency> _declaredDependencies =
+      <String, Dependency>{};
+
+  static final Map<String, Dependency> _singletonDeclaredDependencies =
+      <String, Dependency>{};
 
   static void factory<T extends Object>(
     T instance, {
     String? named,
+    bool isSingleton = false,
   }) {
-    final DependencyID dependencyID = DependencyID(
-      typeName: T.toString(),
-      named: named,
+    _validatedNamed(named);
+    final String key = named ?? T.toString();
+    final Dependency dependency = Dependency(
+      builder: () => instance,
+      isSingleton: false,
     );
-    _dependencies.addAll(<DependencyID, Object Function()>{
-      dependencyID: () => instance,
-    });
+    _declaredDependencies.addAll(<String, Dependency>{key: dependency});
+  }
+
+  static void singleton<T extends Object>(
+    T instance, {
+    String? named,
+  }) {
+    _validatedNamed(named);
+    final String key = named ?? T.toString();
+    final Dependency dependency = Dependency(
+      builder: () => instance,
+      isSingleton: true,
+    );
+    final Dependency? singletonInstance = _singletonDeclaredDependencies[key];
+    if (singletonInstance == null) {
+      _singletonDeclaredDependencies
+          .addAll(<String, Dependency>{key: dependency});
+    }
   }
 
   static void lazyFactory<T extends Object>(
     Object Function() builder, {
     String? named,
+    bool isSingleton = false,
   }) {
-    final DependencyID dependencyID = DependencyID(
-      typeName: T.toString(),
-      named: named,
+    _validatedNamed(named);
+    final String key = named ?? T.toString();
+    final Dependency dependency = Dependency(
+      builder: builder,
+      isSingleton: isSingleton,
     );
-    _dependencies.addAll(<DependencyID, Object Function()>{
-      dependencyID: builder,
-    });
+    _declaredDependencies.addAll(<String, Dependency>{key: dependency});
   }
 
   static T inject<T extends Object>({
     String? named,
   }) {
-    final String typeName = T.toString();
-    final Iterable<DependencyID> dependencyIDList = _dependencies.keys.where(
-        (element) =>
-            element.typeName != null && element.typeName == typeName ||
-            element.named != null && element.named == named);
-
-    if (dependencyIDList.isEmpty) {
-      throw NotDeclaredDependencyError();
+    final String key = named ?? T.toString();
+    final Dependency? singletonDependency = _singletonDeclaredDependencies[key];
+    if (singletonDependency != null) {
+      return (singletonDependency.builder()) as T;
     }
-
-    final first = _dependencies.entries
-        .where((element) =>
-            element.key.typeName != null && element.key.typeName == typeName ||
-            element.key.named != null && element.key.named == named)
-        .first
-        .value();
-
-    return first as T;
+    final Dependency? dependency = _declaredDependencies[key];
+    if (dependency != null) {
+      return (dependency.builder()) as T;
+    }
+    throw NotDeclaredDependencyError();
   }
 
-  static clearDependencies() {
-    _dependencies.clear();
-    print(_dependencies.toString());
+  static clearDependencies() => _declaredDependencies.clear();
+
+  static void _validatedNamed(String? named) {
+    if (named != null && named.isEmpty) throw InvalidDependencyNameError();
   }
 }
