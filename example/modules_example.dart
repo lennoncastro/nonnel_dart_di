@@ -1,4 +1,4 @@
-import 'package:nonnel/src/di_utils.dart';
+import 'package:nonnel/nonnel.dart';
 
 import 'example_utils/a.dart';
 import 'example_utils/b.dart';
@@ -11,6 +11,7 @@ void main() {
   mainModule();
   secondaryModule();
   ThirdModule();
+  print(DIManager.logs());
 }
 
 // creating a module using a method
