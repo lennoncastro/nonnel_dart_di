@@ -1,101 +1,77 @@
-import 'errors/invalid_dependency_name.error.dart';
-import 'errors/not_declared_dependency.error.dart';
+import 'package:nonnel/src/models/log.dart';
+
+import 'di_logger.dart';
 import 'models/dependency.dart';
 
 mixin DIManager {
-  static final List<String> _logs = <String>[];
-  static final Map<String, Dependency> _declaredDependencies =
-      <String, Dependency>{};
+  static final Map<String, Dependency> _factories = <String, Dependency>{};
 
-  static final Map<String, Dependency> _singletonDeclaredDependencies =
-      <String, Dependency>{};
+  static final Map<String, Dependency> _singletons = <String, Dependency>{};
 
-  static void factory<T extends Object>(
-    T instance, {
-    String? named,
-    bool isSingleton = false,
-  }) {
-    _validatedNamed(named);
+  static void factory<T extends Object>(T instance, {String? named}) {
+    _validateNamed(named);
     final String key = named ?? T.toString();
-    _logs.add('🛠  factory $key');
-    final Dependency dependency = Dependency(
-      builder: () => instance,
-      isSingleton: false,
+    final Dependency dependency = Dependency.createDependency(
+      () => instance,
+      false,
     );
-    _declaredDependencies.addAll(<String, Dependency>{key: dependency});
+    _factories.addAll(<String, Dependency>{key: dependency});
+    DILogger.add(Log(name: key, type: 'factory'));
+    if (DILogger.showLogs) print(DILogger.showLast());
   }
 
-  static void singleton<T extends Object>(
-    T instance, {
-    String? named,
-  }) {
-    _validatedNamed(named);
+  static void singleton<T extends Object>(T instance, {String? named}) {
+    _validateNamed(named);
     final String key = named ?? T.toString();
-    final Dependency dependency = Dependency(
-      builder: () => instance,
-      isSingleton: true,
+    final Dependency dependency = Dependency.createDependency(
+      () => instance,
+      true,
     );
-    final Dependency? singletonInstance = _singletonDeclaredDependencies[key];
+    final Dependency? singletonInstance = _singletons[key];
     if (singletonInstance == null) {
-      _singletonDeclaredDependencies
-          .addAll(<String, Dependency>{key: dependency});
+      _singletons.addAll(<String, Dependency>{key: dependency});
     }
-    _logs.add('🛠  singleton $key');
+    DILogger.add(Log(name: key, type: 'singleton'));
+    if (DILogger.showLogs) print(DILogger.showLast());
   }
 
   static void lazyFactory<T extends Object>(
-    Object Function() builder, {
-    String? named,
-    bool isSingleton = false,
-  }) {
-    _validatedNamed(named);
-    final String key = named ?? T.toString();
-    final Dependency dependency = Dependency(
-      builder: builder,
-      isSingleton: isSingleton,
-    );
-    _declaredDependencies.addAll(<String, Dependency>{key: dependency});
-    _logs.add('🛠  lazyFactory $key');
-  }
-
-  static T inject<T extends Object>({
+    T Function() builder, {
     String? named,
   }) {
+    _validateNamed(named);
     final String key = named ?? T.toString();
-    final Dependency? singletonDependency = _singletonDeclaredDependencies[key];
-    _logs.add('  💉 $key');
-    if (singletonDependency != null) {
-      return (singletonDependency.builder()) as T;
-    }
-    final Dependency? dependency = _declaredDependencies[key];
-    if (dependency != null) {
-      return (dependency.builder()) as T;
-    }
-    throw NotDeclaredDependencyError();
+    Dependency dependency = Dependency.createDependency(builder, false);
+    _factories.addAll(<String, Dependency>{key: dependency});
+    DILogger.add(Log(name: key, type: 'lazyFactory'));
+    if (DILogger.showLogs) print(DILogger.showLast());
   }
 
-  static clearDependencies() => _declaredDependencies.clear();
-
-  static logs() {
-    final StringBuffer logs = StringBuffer('\nD.I Manager log\n');
-    logs.write('\nOperations: ${_logs.length}\n\n');
-    logs.write(
-        ' - Factories total: ${_logs.where((element) => element.contains('factory')).length}\n');
-    logs.write(
-        ' - Lazy factories total: ${_logs.where((element) => element.contains('lazyFactory')).length}\n');
-    logs.write(
-        ' - Singletons total: ${_logs.where((element) => element.contains('singleton')).length}\n');
-    logs.write(
-        ' - Injects total: ${_logs.where((element) => element.contains('inject')).length}\n');
-    logs.write('\nExecution: \n');
-    for (final String log in _logs) {
-      logs.write('\n$log\n');
+  static T inject<T extends Object>({String? named}) {
+    final String key = named ?? T.toString();
+    final Dependency? singleton = _singletons[key];
+    if (singleton != null) {
+      DILogger.add(Log(name: key, type: 'inject'));
+      return getDependency<T>(singleton);
     }
-    logs.write('\nEnd D.I Manager log\n');
-    return logs.toString();
+    final Dependency? factory = _factories[key];
+    if (factory != null) {
+      DILogger.add(Log(name: key, type: 'inject'));
+      return getDependency<T>(factory);
+    }
+    throw 'Not declared dependency: $key';
   }
 
-  static void _validatedNamed(String? named) {
-    if (named != null && named.isEmpty) throw InvalidDependencyNameError();
+  static T getDependency<T extends Object>(Dependency dependency) {
+    if (DILogger.showLogs) print(DILogger.showLast());
+    return WeakReference<T>(dependency.builder() as T).target as T;
+  }
+
+  static reset() => _factories.clear();
+
+  static void _validateNamed(String? named) {
+    if (named != null && named.isEmpty) {
+      throw 'Invalid dependency name error: $named';
+    }
   }
 }
