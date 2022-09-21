@@ -1,22 +1,21 @@
 import 'package:nonnel/nonnel.dart';
-import 'package:nonnel/src/errors/invalid_dependency_name.error.dart';
-import 'package:nonnel/src/errors/not_declared_dependency.error.dart';
 import 'package:test/test.dart';
 
 import '../example/example_utils/a.dart';
 
 void main() {
+  setUpAll(() => reset());
+
   group('All tests', () {
     test(
         'When creates a factory with input valid named '
         'Should return a A instance', () {
       //arrange
-      DIManager.clearDependencies();
-      DIManager.factory(A(), named: 'instanceofA');
+      factory(A(), named: 'instanceofA');
 
       // assert
       expect(
-        DIManager.inject(named: 'instanceofA'),
+        inject(named: 'instanceofA'),
         isA<A>(),
       );
     });
@@ -25,34 +24,32 @@ void main() {
         'When creates any singleton with input valid named '
         'Should return the first A instance', () {
       //arrange
-      DIManager.clearDependencies();
       final firstA = A();
       final secondA = A();
       final thirdA = A();
 
       // act
-      DIManager.singleton(firstA, named: 'instanceofA');
-      DIManager.singleton(secondA, named: 'instanceofA');
-      DIManager.singleton(thirdA, named: 'instanceofA');
+      singleton(firstA, named: 'instanceofA');
+      singleton(secondA, named: 'instanceofA');
+      singleton(thirdA, named: 'instanceofA');
 
       // assert
       expect(
-        DIManager.inject(named: 'instanceofA'),
+        inject(named: 'instanceofA'),
         isA<A>(),
       );
-      expect(DIManager.inject<A>(named: 'instanceofA').time, firstA.time);
+      expect(inject<A>(named: 'instanceofA').time, firstA.time);
     });
 
     test(
         'When creates a lazy factory with input valid named '
         'Should return a A instance', () {
       //arrange
-      DIManager.clearDependencies();
-      DIManager.lazyFactory(() => A(), named: 'instanceofA');
+      lazyFactory(() => A(), named: 'instanceofA');
 
       // assert
       expect(
-        DIManager.inject(named: 'instanceofA'),
+        inject(named: 'instanceofA'),
         isA<A>(),
       );
     });
@@ -60,44 +57,21 @@ void main() {
     test(
         'When input invalid named '
         'Should dispatch a InvalidDependencyNameError', () {
-      // arrange
-      DIManager.clearDependencies();
-
       // assert
       expect(
-        () => DIManager.factory(A(), named: ''),
-        throwsA(
-          isA<InvalidDependencyNameError>(),
-        ),
-      );
-    });
-
-    test(
-        'When input invalid named '
-        'Should dispatch a InvalidDependencyNameError', () {
-      // arrange
-      DIManager.clearDependencies();
-
-      // assert
-      expect(
-        () => DIManager.lazyFactory(() => A(), named: ''),
-        throwsA(
-          isA<InvalidDependencyNameError>(),
-        ),
+        () => factory(A(), named: ''),
+        throwsA("Invalid dependency name error: "),
       );
     });
 
     test(
         'When inject a not declared dependency '
         'Should dispatch a NotDeclaredDependencyError', () {
-      // arrange
-      DIManager.clearDependencies();
-
       // assert
       expect(
-        () => DIManager.inject(named: 'Abc'),
+        () => inject(named: 'Abc'),
         throwsA(
-          isA<NotDeclaredDependencyError>(),
+          'Not declared dependency: Abc',
         ),
       );
     });
